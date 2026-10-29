@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoCare Fleet Manager</title>
+    <title>AutoCare AI Fleet Manager</title>
     <!-- Tailwind CSS Production CDN -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- Lucide Icons -->
@@ -11,35 +11,44 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Chart.js for graphical analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; }
+        body { background: #090d16; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+        .glass-card { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glass-nav { background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        .neon-glow { box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.35); }
+        .ai-glow { box-shadow: 0 0 30px -5px rgba(168, 85, 247, 0.3); border: 1px solid rgba(168, 85, 247, 0.4); }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     </style>
 </head>
-<body class="min-h-screen font-sans antialiased">
+<body class="min-h-screen antialiased">
 
     <!-- Top Navigation -->
-    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+    <nav class="glass-nav sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
+            <div class="flex items-center justify-between h-18 py-3">
                 <div class="flex items-center space-x-3">
-                    <div class="p-2 bg-indigo-600 rounded-lg text-white">
-                        <i data-lucide="wrench" class="w-6 h-6"></i>
+                    <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                        <i data-lucide="cpu" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg font-bold text-white leading-none">AutoCare</h1>
-                        <span class="text-xs text-gray-400">Fleet Maintenance & Mileage Tracker</span>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-xl font-black tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">AutoCare AI</h1>
+                            <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-500 bg-opacity-20 text-indigo-300 rounded-full border border-indigo-500/30">Pro Fleet</span>
+                        </div>
+                        <span class="text-xs text-gray-400">Intelligent Maintenance & Cost Optimization</span>
                     </div>
                 </div>
 
                 <div class="flex items-center space-x-3">
-                    <span id="sync-status" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300">
-                        <span class="w-2 h-2 rounded-full bg-yellow-400 mr-1.5"></span> Local Mode
+                    <span id="sync-status" class="hidden sm:inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-800 text-gray-300 border border-gray-700">
+                        <span class="w-2 h-2 rounded-full bg-yellow-400 mr-2 animate-pulse"></span> Local Mode
                     </span>
 
-                    <button onclick="toggleSettingsModal()" class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700 transition" title="Settings & Firebase Sync">
+                    <button onclick="toggleSettingsModal()" class="p-2.5 text-gray-300 hover:text-white rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 transition shadow-md" title="Settings & Firebase Sync">
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -50,82 +59,144 @@
     <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        <!-- Vehicle Switcher & Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
-            <div class="space-y-1">
-                <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Active Vehicle</span>
-                <div class="flex items-center">
-                    <select id="vehicle-select" onchange="switchVehicle(this.value)" class="bg-gray-900 text-white text-xl font-bold rounded-xl px-4 py-2 border border-gray-700 focus:outline-none focus:border-indigo-500 cursor-pointer">
+        <!-- Vehicle Selector & Banner -->
+        <div class="glass-card p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-64 h-64 bg-indigo-600 opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute right-40 bottom-0 w-64 h-64 bg-purple-600 opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                <div class="space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-widest text-indigo-400 flex items-center">
+                        <i data-lucide="shield-check" class="w-4 h-4 mr-1.5"></i> Active Fleet Profile
+                    </span>
+                    <select id="vehicle-select" onchange="switchVehicle(this.value)" class="bg-gray-900 text-white text-2xl font-black rounded-2xl px-5 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-inner">
                         <option value="perodua_alza">Perodua Alza SE</option>
                         <option value="mitsubishi_xpander">Mitsubishi Xpander</option>
                         <option value="yamaha_xmax">Yamaha XMAX 250</option>
                     </select>
                 </div>
-            </div>
 
-            <!-- Stats Overview Cards -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto">
-                <div class="bg-gray-900 bg-opacity-60 p-3 rounded-xl border border-gray-700">
-                    <div class="text-xs text-gray-400">Current Odometer</div>
-                    <div class="text-lg font-bold text-white" id="stat-odo">0 km</div>
-                </div>
-                <div class="bg-gray-900 bg-opacity-60 p-3 rounded-xl border border-gray-700">
-                    <div class="text-xs text-gray-400">Total Spent</div>
-                    <div class="text-lg font-bold text-green-400" id="stat-cost">RM 0</div>
-                </div>
-                <div class="bg-gray-900 bg-opacity-60 p-3 rounded-xl border border-gray-700">
-                    <div class="text-xs text-gray-400">Avg Mileage</div>
-                    <div class="text-lg font-bold text-indigo-400" id="stat-eff">0 km/L</div>
-                </div>
-                <div class="bg-gray-900 bg-opacity-60 p-3 rounded-xl border border-gray-700">
-                    <div class="text-xs text-gray-400">Cost per KM</div>
-                    <div class="text-lg font-bold text-yellow-400" id="stat-cost-km">RM 0.00</div>
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                    <div class="bg-gray-900 bg-opacity-70 p-4 rounded-2xl border border-gray-800 shadow-lg">
+                        <div class="text-xs text-gray-400 font-medium">Odometer</div>
+                        <div class="text-xl font-extrabold text-white mt-1" id="stat-odo">0 km</div>
+                    </div>
+                    <div class="bg-gray-900 bg-opacity-70 p-4 rounded-2xl border border-indigo-500/40 shadow-lg bg-gradient-to-br from-indigo-950/40 to-gray-900/80">
+                        <div class="text-xs text-indigo-300 font-medium flex items-center">
+                            <i data-lucide="gauge" class="w-3.5 h-3.5 mr-1 text-indigo-400"></i> Next Service
+                        </div>
+                        <div class="text-xl font-extrabold text-indigo-300 mt-1" id="stat-next-odo">0 km</div>
+                    </div>
+                    <div class="bg-gray-900 bg-opacity-70 p-4 rounded-2xl border border-gray-800 shadow-lg">
+                        <div class="text-xs text-gray-400 font-medium">Total Spent</div>
+                        <div class="text-xl font-extrabold text-emerald-400 mt-1" id="stat-cost">RM 0</div>
+                    </div>
+                    <div class="bg-gray-900 bg-opacity-70 p-4 rounded-2xl border border-gray-800 shadow-lg">
+                        <div class="text-xs text-gray-400 font-medium">Efficiency</div>
+                        <div class="text-xl font-extrabold text-indigo-400 mt-1" id="stat-eff">0 km/L</div>
+                    </div>
+                    <div class="bg-gray-900 bg-opacity-70 p-4 rounded-2xl border border-gray-800 shadow-lg">
+                        <div class="text-xs text-gray-400 font-medium">Cost / KM</div>
+                        <div class="text-xl font-extrabold text-amber-400 mt-1" id="stat-cost-km">RM 0.00</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Action Grid -->
+        <!-- AI Advisor & Diagnostic Section -->
+        <div class="ai-glow bg-gradient-to-r from-indigo-950/80 via-purple-950/80 to-slate-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                <i data-lucide="sparkles" class="w-32 h-32 text-purple-300"></i>
+            </div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-purple-600 rounded-xl text-white animate-pulse">
+                        <i data-lucide="bot" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white flex items-center">AutoCare AI Fleet Advisor</h3>
+                        <span class="text-xs text-purple-300">Real-time predictive diagnostics & expenditure insights</span>
+                    </div>
+                </div>
+                <button onclick="generateAIInsights()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5 mr-1.5"></i> Refresh Analysis
+                </button>
+            </div>
+            <div id="ai-advisor-content" class="text-sm text-purple-200/90 space-y-2 relative z-10 leading-relaxed font-medium">
+                Analyzing vehicle telemetry, service intervals, and fuel consumption trends...
+            </div>
+        </div>
+
+        <!-- Charts & Graphical Analytics Section -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1 bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl space-y-4">
+            <div class="glass-card rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-white flex items-center">
+                        <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-400 mr-2"></i> Spending Distribution
+                    </h3>
+                </div>
+                <div class="relative h-64 flex items-center justify-center">
+                    <canvas id="costChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card lg:col-span-2 rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-white flex items-center">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-indigo-400 mr-2"></i> Monthly Expense Trend
+                    </h3>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance Health & History Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Maintenance Health Checklists -->
+            <div class="glass-card rounded-3xl p-6 shadow-2xl space-y-4 flex flex-col">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-bold text-white flex items-center">
-                        <i data-lucide="shield-alert" class="w-5 h-5 text-indigo-400 mr-2"></i> Maintenance Health
+                    <h2 class="text-base font-bold text-white flex items-center">
+                        <i data-lucide="shield-alert" class="w-5 h-5 text-indigo-400 mr-2"></i> Component Health
                     </h2>
-                    <span class="text-xs text-gray-400" id="vehicle-type-badge">Car Profile</span>
+                    <span class="text-xs text-gray-400 font-semibold" id="vehicle-type-badge">Car Profile</span>
                 </div>
 
-                <div id="checklist-status-container" class="space-y-3 custom-scrollbar max-h-96 overflow-y-auto pr-1"></div>
+                <div id="checklist-status-container" class="space-y-3 custom-scrollbar flex-1 max-h-[380px] overflow-y-auto pr-1"></div>
 
-                <button onclick="openLogModal()" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center transition shadow-lg">
+                <button onclick="openLogModal()" class="w-full mt-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center transition shadow-lg shadow-indigo-600/30">
                     <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Add New Log Entry
                 </button>
             </div>
 
-            <div class="lg:col-span-2 bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl space-y-4">
+            <!-- Service & Mileage History Table -->
+            <div class="glass-card lg:col-span-2 rounded-3xl p-6 shadow-2xl space-y-4">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-bold text-white flex items-center">
+                    <h2 class="text-base font-bold text-white flex items-center">
                         <i data-lucide="history" class="w-5 h-5 text-indigo-400 mr-2"></i> Service & Mileage History
                     </h2>
                     <div class="flex space-x-2">
-                        <button onclick="exportJSON()" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-gray-300 flex items-center transition">
-                            <i data-lucide="download" class="w-3.5 h-3.5 mr-1"></i> Export Backup
+                        <button onclick="exportJSON()" class="text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3.5 py-2 rounded-xl text-gray-300 font-medium flex items-center transition shadow-sm">
+                            <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5"></i> Export Backup
                         </button>
                     </div>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full text-left text-sm text-gray-300">
-                        <thead class="bg-gray-900 bg-opacity-80 text-xs uppercase text-gray-400">
+                        <thead class="bg-gray-900 bg-opacity-80 text-xs uppercase text-gray-400 tracking-wider">
                             <tr>
-                                <th class="p-3 rounded-l-lg">Date</th>
-                                <th class="p-3">Type</th>
-                                <th class="p-3">Mileage</th>
-                                <th class="p-3">Items / Details</th>
-                                <th class="p-3">Cost (RM)</th>
-                                <th class="p-3 rounded-r-lg text-right">Action</th>
+                                <th class="p-3.5 rounded-l-xl">Date</th>
+                                <th class="p-3.5">Type</th>
+                                <th class="p-3.5">Mileage</th>
+                                <th class="p-3.5">Items / Details</th>
+                                <th class="p-3.5">Cost (RM)</th>
+                                <th class="p-3.5 rounded-r-xl text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody id="logs-table-body" class="divide-y divide-gray-700"></tbody>
+                        <tbody id="logs-table-body" class="divide-y divide-gray-800/60"></tbody>
                     </table>
                 </div>
             </div>
@@ -134,23 +205,23 @@
     </main>
 
     <!-- Modal: Add / Edit Log Entry -->
-    <div id="log-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
-        <div class="bg-gray-800 rounded-2xl border border-gray-700 max-w-lg w-full p-6 space-y-6 max-h-screen overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-gray-700 pb-4">
+    <div id="log-modal" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="glass-card rounded-3xl border border-gray-700 max-w-lg w-full p-8 space-y-6 max-h-screen overflow-y-auto shadow-2xl">
+            <div class="flex items-center justify-between border-b border-gray-700/80 pb-4">
                 <h3 id="modal-title" class="text-lg font-bold text-white">Record Service / Fuel Entry</h3>
-                <button type="button" onclick="closeLogModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button type="button" onclick="closeLogModal()" class="text-gray-400 hover:text-white p-1 rounded-xl bg-gray-800"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
 
             <form id="log-form" onsubmit="handleSaveLog(event)" class="space-y-4">
                 <input type="hidden" id="edit-log-id">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Date</label>
-                        <input type="date" id="log-date" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        <label class="block text-xs text-gray-400 mb-1 font-semibold">Date</label>
+                        <input type="date" id="log-date" required class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-3 text-white focus:outline-none focus:border-indigo-500 shadow-inner">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Entry Type</label>
-                        <select id="log-type" onchange="toggleLogTypeFields(this.value)" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        <label class="block text-xs text-gray-400 mb-1 font-semibold">Entry Type</label>
+                        <select id="log-type" onchange="toggleLogTypeFields(this.value)" class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-3 text-white focus:outline-none focus:border-indigo-500 shadow-inner cursor-pointer">
                             <option value="service">Maintenance Service</option>
                             <option value="fuel">Fuel Fill-up</option>
                         </select>
@@ -159,72 +230,71 @@
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Odometer Mileage (KM)</label>
-                        <input type="number" id="log-mileage" required placeholder="e.g. 45000" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        <label class="block text-xs text-gray-400 mb-1 font-semibold">Odometer Mileage (KM)</label>
+                        <input type="number" id="log-mileage" required placeholder="e.g. 45000" class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-3 text-white focus:outline-none focus:border-indigo-500 shadow-inner">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Total Cost (RM)</label>
-                        <input type="number" step="0.01" id="log-cost" required placeholder="0.00" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        <label class="block text-xs text-gray-400 mb-1 font-semibold">Total Cost (RM)</label>
+                        <input type="number" step="0.01" id="log-cost" required placeholder="0.00" class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-3 text-white focus:outline-none focus:border-indigo-500 shadow-inner">
                     </div>
                 </div>
 
                 <div id="fuel-fields" class="hidden space-y-4">
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Fuel Quantity (Liters)</label>
-                        <input type="number" step="0.01" id="log-liters" placeholder="e.g. 35.5" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        <label class="block text-xs text-gray-400 mb-1 font-semibold">Fuel Quantity (Liters)</label>
+                        <input type="number" step="0.01" id="log-liters" placeholder="e.g. 35.5" class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-3 text-white focus:outline-none focus:border-indigo-500 shadow-inner">
                     </div>
                 </div>
 
                 <div id="service-fields" class="space-y-3">
                     <div class="flex justify-between items-center">
-                        <label class="block text-xs font-semibold text-gray-300">Replaced / Serviced Items Checkbox</label>
-                        <button type="button" onclick="toggleCustomItemForm()" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center">
+                        <label class="block text-xs font-bold text-gray-300">Replaced / Serviced Items Checkbox</label>
+                        <button type="button" onclick="toggleCustomItemForm()" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center">
                             <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> Add Custom Item
                         </button>
                     </div>
 
-                    <!-- Add Custom Item Form -->
-                    <div id="custom-item-form" class="hidden bg-gray-900 bg-opacity-80 p-3 rounded-xl border border-indigo-500 space-y-2">
-                        <span class="text-xs text-indigo-300 font-bold block">New Custom Service Checklist Item</span>
+                    <div id="custom-item-form" class="hidden bg-gray-900 p-4 rounded-2xl border border-indigo-500/60 space-y-2">
+                        <span class="text-xs text-indigo-300 font-bold block">New Custom Service Item</span>
                         <div class="grid grid-cols-3 gap-2">
-                            <input type="text" id="custom-item-name" placeholder="Item Name (e.g. Battery)" class="col-span-2 bg-gray-800 text-xs border border-gray-700 rounded-lg p-2 text-white">
-                            <input type="number" id="custom-item-interval" placeholder="Interval KM" class="bg-gray-800 text-xs border border-gray-700 rounded-lg p-2 text-white">
+                            <input type="text" id="custom-item-name" placeholder="Item Name (e.g. Battery)" class="col-span-2 bg-gray-800 text-xs border border-gray-700 rounded-xl p-2.5 text-white">
+                            <input type="number" id="custom-item-interval" placeholder="Interval KM" class="bg-gray-800 text-xs border border-gray-700 rounded-xl p-2.5 text-white">
                         </div>
-                        <button type="button" onclick="addCustomServiceItem()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold py-1.5 rounded-lg text-white">Save Item to Vehicle Checklist</button>
+                        <button type="button" onclick="addCustomServiceItem()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold py-2 rounded-xl text-white shadow-md">Save Item to Checklist</button>
                     </div>
 
-                    <div id="modal-checklist-container" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 bg-gray-900 bg-opacity-60 rounded-xl border border-gray-700"></div>
+                    <div id="modal-checklist-container" class="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto p-3 bg-gray-900/80 rounded-2xl border border-gray-700 custom-scrollbar"></div>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">Workshop / Notes</label>
-                    <input type="text" id="log-notes" placeholder="e.g. Workshop Name, Tire brand, Oil brand" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs text-gray-400 mb-1 font-semibold">Workshop / Notes</label>
+                    <input type="text" id="log-notes" placeholder="e.g. Workshop Name, Tire model, Oil grade" class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-3 text-white focus:outline-none focus:border-indigo-500 shadow-inner">
                 </div>
 
-                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-700">
-                    <button type="button" onclick="closeLogModal()" class="px-4 py-2 bg-gray-700 text-gray-300 rounded-xl hover:bg-gray-600">Cancel</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg">Save Entry</button>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-700/80">
+                    <button type="button" onclick="closeLogModal()" class="px-5 py-2.5 bg-gray-800 text-gray-300 font-semibold rounded-2xl hover:bg-gray-700 transition">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/30 transition">Save Entry</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Modal: Settings & Firebase Config -->
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
-        <div class="bg-gray-800 rounded-2xl border border-gray-700 max-w-md w-full p-6 space-y-6">
-            <div class="flex items-center justify-between border-b border-gray-700 pb-4">
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="glass-card rounded-3xl border border-gray-700 max-w-md w-full p-8 space-y-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-gray-700/80 pb-4">
                 <h3 class="text-lg font-bold text-white">Firebase Sync & Settings</h3>
-                <button type="button" onclick="toggleSettingsModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button type="button" onclick="toggleSettingsModal()" class="text-gray-400 hover:text-white p-1 rounded-xl bg-gray-800"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
 
             <div class="space-y-4">
-                <p class="text-xs text-gray-400">Paste your Firebase Config snippet JSON object below to enable permanent cloud sync across all your devices.</p>
-                <textarea id="firebase-config-input" rows="6" placeholder='{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "..."\n}' class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500"></textarea>
+                <p class="text-xs text-gray-400 leading-relaxed">Paste your Firebase Config snippet JSON object below to enable permanent cloud synchronization across all your devices.</p>
+                <textarea id="firebase-config-input" rows="6" placeholder='{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "..."\n}' class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-4 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 shadow-inner custom-scrollbar"></textarea>
             </div>
 
-            <div class="flex justify-between items-center pt-4 border-t border-gray-700">
-                <button type="button" onclick="clearFirebaseConfig()" class="text-xs text-red-400 hover:underline">Clear & Reset</button>
-                <button type="button" onclick="saveFirebaseConfig()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl">Connect Firebase</button>
+            <div class="flex justify-between items-center pt-4 border-t border-gray-700/80">
+                <button type="button" onclick="clearFirebaseConfig()" class="text-xs text-rose-400 hover:underline font-semibold">Clear & Reset</button>
+                <button type="button" onclick="saveFirebaseConfig()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/30 transition">Connect Firebase</button>
             </div>
         </div>
     </div>
@@ -235,7 +305,7 @@
                 name: "Perodua Alza SE",
                 items: [
                     { id: "engine_oil", name: "Engine Oil & Filter", interval: 10000 },
-                    { id: "tyre_change", name: "Tyre Change / Replacement", interval: 40000 },
+                    { id: "tyre_change", name: "Tyre Replacement", interval: 40000 },
                     { id: "spark_plugs", name: "Spark Plugs", interval: 40000 },
                     { id: "atf_fluid", name: "ATF / Gearbox Fluid", interval: 40000 },
                     { id: "air_filter", name: "Engine Air Filter", interval: 20000 },
@@ -249,7 +319,7 @@
                 name: "Mitsubishi Xpander",
                 items: [
                     { id: "engine_oil", name: "Engine Oil & Filter", interval: 10000 },
-                    { id: "tyre_change", name: "Tyre Change / Replacement", interval: 40000 },
+                    { id: "tyre_change", name: "Tyre Replacement", interval: 40000 },
                     { id: "cvt_fluid", name: "CVT Fluid", interval: 40000 },
                     { id: "spark_plugs", name: "Iridium Spark Plugs", interval: 50000 },
                     { id: "air_filter", name: "Air Cleaner Element", interval: 20000 },
@@ -260,15 +330,15 @@
             yamaha_xmax: {
                 name: "Yamaha XMAX 250",
                 items: [
-                    { id: "engine_oil", name: "Engine Oil (Yamalube/Synthetic)", interval: 3000 },
-                    { id: "front_rear_tyres", name: "Front & Rear Tyre Replacement", interval: 15000 },
-                    { id: "gear_oil", name: "Final Transmission Gear Oil", interval: 6000 },
+                    { id: "engine_oil", name: "Engine Oil (Synthetic)", interval: 3000 },
+                    { id: "front_rear_tyres", name: "Tyre Replacement", interval: 15000 },
+                    { id: "gear_oil", name: "Transmission Gear Oil", interval: 6000 },
                     { id: "v_belt", name: "CVT V-Belt", interval: 20000 },
                     { id: "cvt_rollers", name: "CVT Weight Rollers", interval: 12000 },
                     { id: "spark_plug", name: "Spark Plug", interval: 10000 },
-                    { id: "air_filter", name: "Engine Air Filter Element", interval: 12000 },
+                    { id: "air_filter", name: "Engine Air Filter", interval: 12000 },
                     { id: "cvt_filter", name: "CVT Air Filter", interval: 10000 },
-                    { id: "brake_pads", name: "Front/Rear Brake Pads", interval: 10000 }
+                    { id: "brake_pads", name: "Brake Pads", interval: 10000 }
                 ]
             }
         };
@@ -277,6 +347,8 @@
         let appLogs = JSON.parse(localStorage.getItem('autocare_logs')) || {};
         let db = null;
         let currentVehicleKey = 'perodua_alza';
+        let costChartInstance = null;
+        let trendChartInstance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -284,6 +356,7 @@
             if (dateEl) dateEl.valueAsDate = new Date();
             initFirebaseFromStorage();
             loadVehicleData();
+            initCharts();
         });
 
         function switchVehicle(key) {
@@ -317,16 +390,142 @@
                 }
             }
 
+            // Calculate overall Next Service Target Mileage across all active checklist items
+            let nextServiceOdoTarget = Infinity;
+            config.items.forEach(item => {
+                const lastLog = logs.filter(l => l.type === 'service' && l.checklist && l.checklist.includes(item.id)).sort((a, b) => b.mileage - a.mileage)[0];
+                const lastOdo = lastLog ? parseFloat(lastLog.mileage) : 0;
+                const itemNextOdo = lastOdo + item.interval;
+                if (itemNextOdo < nextServiceOdoTarget) {
+                    nextServiceOdoTarget = itemNextOdo;
+                }
+            });
+
+            if (nextServiceOdoTarget === Infinity) {
+                nextServiceOdoTarget = maxOdo + 10000; // default fallback
+            }
+
             const avgKml = (totalFuelLiters > 0) ? (fuelDistance / totalFuelLiters).toFixed(2) : "N/A";
             const costPerKm = (maxOdo > 0 && totalCost > 0) ? (totalCost / maxOdo).toFixed(2) : "0.00";
 
             document.getElementById('stat-odo').innerText = `${maxOdo.toLocaleString()} km`;
+            document.getElementById('stat-next-odo').innerText = `${nextServiceOdoTarget.toLocaleString()} km`;
             document.getElementById('stat-cost').innerText = `RM ${totalCost.toFixed(2)}`;
             document.getElementById('stat-eff').innerText = `${avgKml} ${avgKml !== 'N/A' ? 'km/L' : ''}`;
             document.getElementById('stat-cost-km').innerText = `RM ${costPerKm}`;
 
             renderChecklistStatus(maxOdo);
             renderLogsTable(logs);
+            updateChartsData(logs);
+            generateAIInsights();
+        }
+
+        function generateAIInsights() {
+            const logs = getVehicleLogs();
+            const config = VEHICLE_CONFIGS[currentVehicleKey] || DEFAULT_CONFIGS[currentVehicleKey];
+            const advisorEl = document.getElementById('ai-advisor-content');
+            if (!advisorEl) return;
+
+            let maxOdo = 0;
+            logs.forEach(l => { if (parseFloat(l.mileage) > maxOdo) maxOdo = parseFloat(l.mileage); });
+
+            let alerts = [];
+            config.items.forEach(item => {
+                const lastLog = logs.filter(l => l.type === 'service' && l.checklist && l.checklist.includes(item.id)).sort((a, b) => b.mileage - a.mileage)[0];
+                const lastOdo = lastLog ? parseFloat(lastLog.mileage) : 0;
+                const nextOdo = lastOdo + item.interval;
+                const remaining = nextOdo - maxOdo;
+                if (maxOdo > 0 && remaining <= 1000) {
+                    alerts.push(`⚠️ <strong>${item.name}</strong> is ${remaining <= 0 ? 'overdue by ' + Math.abs(remaining) + ' km' : 'due in ' + remaining + ' km'}.`);
+                }
+            });
+
+            const totalSpent = logs.reduce((acc, l) => acc + parseFloat(l.cost || 0), 0);
+
+            let aiText = `<p class="flex items-center"><i data-lucide="sparkles" class="w-4 h-4 text-purple-400 mr-2 inline"></i> Vehicle telemetry nominal. Current Odometer stands at <strong>${maxOdo.toLocaleString()} km</strong> with a total expenditure of <strong>RM ${totalSpent.toFixed(2)}</strong>.</p>`;
+            if (alerts.length > 0) {
+                aiText += `<p class="mt-2 text-amber-300"><strong>Priority Actions:</strong> ${alerts.join(' | ')}</p>`;
+            } else {
+                aiText += `<p class="mt-2 text-emerald-300">✨ All primary maintenance items are currently in optimal health status. No urgent service required.</p>`;
+            }
+            aiText += `<p class="mt-2 text-xs text-purple-300/80">Tip: Regular fuel log updates improve overall efficiency accuracy and cost-per-kilometer forecasting.</p>`;
+
+            advisorEl.innerHTML = aiText;
+            lucide.createIcons();
+        }
+
+        function initCharts() {
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            costChartInstance = new Chart(costCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Maintenance', 'Fuel'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#6366f1', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } } }
+                }
+            });
+
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            trendChartInstance = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Monthly Expense (RM)',
+                        data: [0, 0, 0, 0, 0, 0],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateChartsData(logs) {
+            let serviceTotal = 0, fuelTotal = 0;
+            logs.forEach(l => {
+                if (l.type === 'service') serviceTotal += parseFloat(l.cost || 0);
+                if (l.type === 'fuel') fuelTotal += parseFloat(l.cost || 0);
+            });
+
+            if (costChartInstance) {
+                costChartInstance.data.datasets[0].data = [serviceTotal, fuelTotal];
+                costChartInstance.update();
+            }
+
+            const monthlyMap = {};
+            logs.forEach(l => {
+                if (!l.date) return;
+                const month = l.date.slice(0, 7);
+                monthlyMap[month] = (monthlyMap[month] || 0) + parseFloat(l.cost || 0);
+            });
+
+            const sortedMonths = Object.keys(monthlyMap).sort().slice(-6);
+            const sortedTotals = sortedMonths.map(m => monthlyMap[m]);
+
+            if (trendChartInstance && sortedMonths.length > 0) {
+                trendChartInstance.data.labels = sortedMonths;
+                trendChartInstance.data.datasets[0].data = sortedTotals;
+                trendChartInstance.update();
+            }
         }
 
         function renderChecklistStatus(currentOdo) {
@@ -342,19 +541,19 @@
                 const nextOdo = lastOdo + item.interval;
                 const remainingKm = nextOdo - currentOdo;
 
-                let color = 'bg-green-500 bg-opacity-10 border-green-500 border-opacity-30 text-green-400', badge = 'OK';
+                let color = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400', badge = 'OK';
                 if (currentOdo > 0) {
-                    if (remainingKm <= 0) { color = 'bg-red-500 bg-opacity-10 border-red-500 border-opacity-30 text-red-400'; badge = 'Overdue'; }
-                    else if (remainingKm <= 1000) { color = 'bg-yellow-500 bg-opacity-10 border-yellow-500 border-opacity-30 text-yellow-400'; badge = 'Due Soon'; }
+                    if (remainingKm <= 0) { color = 'bg-rose-500/10 border-rose-500/30 text-rose-400'; badge = 'Overdue'; }
+                    else if (remainingKm <= 1000) { color = 'bg-amber-500/10 border-amber-500/30 text-amber-400'; badge = 'Due Soon'; }
                 }
 
                 container.insertAdjacentHTML('beforeend', `
-                    <div class="p-3 rounded-xl border ${color} space-y-1">
+                    <div class="p-3.5 rounded-2xl border ${color} space-y-1.5 backdrop-blur-sm">
                         <div class="flex justify-between items-center">
-                            <span class="font-semibold text-sm text-gray-200">${item.name}</span>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border border-current">${badge}</span>
+                            <span class="font-bold text-sm text-gray-200">${item.name}</span>
+                            <span class="text-[10px] font-black px-2.5 py-0.5 rounded-full border border-current tracking-wider">${badge}</span>
                         </div>
-                        <div class="flex justify-between text-xs text-gray-400">
+                        <div class="flex justify-between text-xs text-gray-400 font-medium">
                             <span>Last: ${lastOdo > 0 ? lastOdo.toLocaleString() + ' km' : 'Never'}</span>
                             <span>Next: <strong class="text-white">${nextOdo.toLocaleString()} km</strong></span>
                         </div>
@@ -366,7 +565,7 @@
         function renderLogsTable(logs) {
             const tbody = document.getElementById('logs-table-body');
             if (!tbody) return;
-            tbody.innerHTML = logs.length === 0 ? `<tr><td colspan="6" class="p-4 text-center text-gray-500">No logs recorded yet.</td></tr>` : '';
+            tbody.innerHTML = logs.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-gray-500 font-medium">No logs recorded yet. Add your first entry below.</td></tr>` : '';
             
             const config = VEHICLE_CONFIGS[currentVehicleKey] || DEFAULT_CONFIGS[currentVehicleKey];
 
@@ -377,23 +576,23 @@
                         const found = config.items.find(i => i.id === cId);
                         return found ? found.name : cId;
                     });
-                    details = `<span class="text-indigo-300 font-medium">${names.join(', ')}</span>` + (log.notes ? `<br><span class="text-gray-400 text-xs">${log.notes}</span>` : '');
+                    details = `<span class="text-indigo-300 font-semibold">${names.join(', ')}</span>` + (log.notes ? `<br><span class="text-gray-400 text-xs">${log.notes}</span>` : '');
                 } else if (log.type === 'fuel') {
                     details = `Fuel Fill-up (${log.liters || 0} L)` + (log.notes ? ` - ${log.notes}` : '');
                 }
 
                 tbody.insertAdjacentHTML('beforeend', `
-                    <tr class="hover:bg-gray-700 hover:bg-opacity-30 transition">
-                        <td class="p-3 font-medium text-gray-200">${log.date}</td>
-                        <td class="p-3"><span class="px-2 py-1 rounded-md text-[10px] font-bold ${log.type === 'service' ? 'bg-indigo-500 bg-opacity-20 text-indigo-300' : 'bg-green-500 bg-opacity-20 text-green-300'}">${log.type.toUpperCase()}</span></td>
-                        <td class="p-3">${parseInt(log.mileage).toLocaleString()} km</td>
-                        <td class="p-3">${details}</td>
-                        <td class="p-3 font-semibold text-green-400">RM ${parseFloat(log.cost).toFixed(2)}</td>
-                        <td class="p-3 text-right space-x-1">
-                            <button type="button" onclick="editLog('${log.id}')" class="text-gray-400 hover:text-indigo-400 p-1 transition" title="Edit Log">
+                    <tr class="hover:bg-gray-800/40 transition">
+                        <td class="p-3.5 font-semibold text-gray-200">${log.date}</td>
+                        <td class="p-3.5"><span class="px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider ${log.type === 'service' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">${log.type}</span></td>
+                        <td class="p-3.5 font-medium">${parseInt(log.mileage).toLocaleString()} km</td>
+                        <td class="p-3.5">${details}</td>
+                        <td class="p-3.5 font-bold text-emerald-400">RM ${parseFloat(log.cost).toFixed(2)}</td>
+                        <td class="p-3.5 text-right space-x-1">
+                            <button type="button" onclick="editLog('${log.id}')" class="text-gray-400 hover:text-indigo-400 p-1.5 rounded-lg hover:bg-gray-800 transition" title="Edit Log">
                                 <i data-lucide="edit-3" class="w-4 h-4 inline"></i>
                             </button>
-                            <button type="button" onclick="deleteLog('${log.id}')" class="text-gray-400 hover:text-red-400 p-1 transition" title="Delete Log">
+                            <button type="button" onclick="deleteLog('${log.id}')" class="text-gray-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-gray-800 transition" title="Delete Log">
                                 <i data-lucide="trash-2" class="w-4 h-4 inline"></i>
                             </button>
                         </td>
@@ -452,9 +651,9 @@
             config.items.forEach(item => {
                 const isChecked = selectedIds.includes(item.id) ? 'checked' : '';
                 container.insertAdjacentHTML('beforeend', `
-                    <label class="flex items-center space-x-2 text-xs text-gray-300 bg-gray-800 p-2 rounded-lg cursor-pointer hover:bg-gray-700">
-                        <input type="checkbox" value="${item.id}" ${isChecked} class="log-checklist-item rounded bg-gray-900 border-gray-700 text-indigo-600">
-                        <span>${item.name}</span>
+                    <label class="flex items-center space-x-2.5 text-xs text-gray-300 bg-gray-800/80 p-2.5 rounded-xl cursor-pointer hover:bg-gray-700 transition">
+                        <input type="checkbox" value="${item.id}" ${isChecked} class="log-checklist-item rounded bg-gray-900 border-gray-700 text-indigo-600 focus:ring-0">
+                        <span class="font-medium">${item.name}</span>
                     </label>
                 `);
             });
@@ -631,8 +830,8 @@
                     
                     const statusEl = document.getElementById('sync-status');
                     if (statusEl) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-400 mr-1.5"></span> Firebase Cloud Connected`;
-                        statusEl.className = 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-950 text-green-300 border border-green-800';
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span> Firebase Cloud Connected`;
+                        statusEl.className = 'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800';
                     }
 
                     db.collection('fleet_logs').doc('user_data').get().then(doc => {
@@ -661,7 +860,7 @@
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ logs: appLogs, configs: VEHICLE_CONFIGS }, null, 2));
             const dlAnchor = document.createElement('a');
             dlAnchor.setAttribute("href", dataStr);
-            dlAnchor.setAttribute("download", `autocare_backup_${new Date().toISOString().slice(0,10)}.json`);
+            dlAnchor.setAttribute("download", `autocare_ai_backup_${new Date().toISOString().slice(0,10)}.json`);
             document.body.appendChild(dlAnchor);
             dlAnchor.click();
             dlAnchor.remove();
