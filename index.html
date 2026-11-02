@@ -13,7 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <!-- Chart.js for graphical analytics -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -30,7 +30,6 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-
         input, select, textarea { font-size: 16px !important; }
     </style>
 </head>
@@ -40,20 +39,16 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
         <div class="glass-card max-w-md w-full p-8 rounded-3xl shadow-2xl text-center space-y-6 relative overflow-hidden">
             <div class="absolute -top-10 -right-10 w-40 h-40 bg-indigo-600 opacity-20 rounded-full blur-3xl"></div>
-            
             <div class="inline-flex p-4 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-2xl text-white shadow-xl shadow-indigo-500/30">
                 <i data-lucide="cpu" class="w-10 h-10"></i>
             </div>
-
             <div>
                 <h1 class="text-2xl font-black bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">AutoCare AI</h1>
-                <p class="text-xs text-gray-400 mt-1">Fleet Intelligence & Service Management</p>
+                <p class="text-xs text-gray-400 mt-1">Fleet Intelligence & Predictive Service Manager</p>
             </div>
-
             <p class="text-xs text-gray-300 leading-relaxed bg-gray-900/60 p-3.5 rounded-2xl border border-gray-800">
                 Sign in with your Google account. First-time registrations will require manual approval from the System Administrator.
             </p>
-
             <button onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center transition shadow-lg space-x-3">
                 <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
                 <span>Sign in with Google</span>
@@ -98,9 +93,13 @@
                     </div>
 
                     <div class="flex items-center space-x-2 sm:space-x-3">
-                        <!-- Admin Panel Trigger Button (Visible only to Admin) -->
+                        <button onclick="toggleRemindersModal()" class="relative p-2 sm:p-2.5 text-gray-300 hover:text-white rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 transition" title="Reminders">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span id="bell-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">0</span>
+                        </button>
+
                         <button id="admin-panel-btn" onclick="toggleAdminModal()" class="hidden px-3 py-1.5 bg-amber-600/20 text-amber-300 border border-amber-500/40 hover:bg-amber-600/30 rounded-xl text-xs font-bold transition flex items-center">
-                            <i data-lucide="shield-check" class="w-4 h-4 mr-1"></i> Admin Approval Panel
+                            <i data-lucide="shield-check" class="w-4 h-4 mr-1"></i> Admin Panel
                         </button>
 
                         <button onclick="handleSignOut()" class="p-2 sm:p-2.5 text-gray-300 hover:text-white rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 transition" title="Sign Out">
@@ -113,7 +112,7 @@
 
         <!-- Dashboard Content -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
-            <!-- Vehicle Selector & Banner -->
+            <!-- Active Vehicle Selector & Telemetry Cards -->
             <div class="glass-card p-5 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
                     <div class="space-y-2">
@@ -135,27 +134,29 @@
                         </div>
                         <div class="bg-gray-900 bg-opacity-70 p-3 sm:p-3.5 rounded-2xl border border-indigo-500/40 shadow-lg">
                             <div class="text-[11px] sm:text-xs text-indigo-300 font-bold flex items-center">
-                                <i data-lucide="wrench" class="w-3 h-3 mr-1"></i> Next Service
+                                <i data-lucide="wrench" class="w-3 h-3 mr-1"></i> Next Minor
                             </div>
                             <div class="text-base sm:text-lg font-extrabold text-indigo-400 mt-1" id="stat-next-service">0 km</div>
                         </div>
-                        <div class="bg-gray-900 bg-opacity-70 p-3 sm:p-3.5 rounded-2xl border border-gray-800 shadow-lg">
-                            <div class="text-[11px] sm:text-xs text-gray-400 font-medium">Total Spent</div>
-                            <div class="text-base sm:text-lg font-extrabold text-emerald-400 mt-1" id="stat-cost">RM 0</div>
+                        <div class="bg-gray-900 bg-opacity-70 p-3 sm:p-3.5 rounded-2xl border border-emerald-500/40 shadow-lg">
+                            <div class="text-[11px] sm:text-xs text-emerald-300 font-bold flex items-center">
+                                <i data-lucide="disc" class="w-3 h-3 mr-1"></i> Tyre Status
+                            </div>
+                            <div class="text-base sm:text-lg font-extrabold text-emerald-400 mt-1" id="stat-tyre-status">OK</div>
                         </div>
                         <div class="bg-gray-900 bg-opacity-70 p-3 sm:p-3.5 rounded-2xl border border-gray-800 shadow-lg">
-                            <div class="text-[11px] sm:text-xs text-gray-400 font-medium">Efficiency</div>
-                            <div class="text-base sm:text-lg font-extrabold text-indigo-400 mt-1" id="stat-eff">0 km/L</div>
+                            <div class="text-[11px] sm:text-xs text-gray-400 font-medium">Daily Pace</div>
+                            <div class="text-base sm:text-lg font-extrabold text-indigo-300 mt-1" id="stat-daily-pace">0 km/d</div>
                         </div>
                         <div class="bg-gray-900 bg-opacity-70 p-3 sm:p-3.5 rounded-2xl border border-gray-800 shadow-lg col-span-2 sm:col-span-1">
-                            <div class="text-[11px] sm:text-xs text-gray-400 font-medium">Cost / KM</div>
-                            <div class="text-base sm:text-lg font-extrabold text-amber-400 mt-1" id="stat-cost-km">RM 0.00</div>
+                            <div class="text-[11px] sm:text-xs text-gray-400 font-medium">Total Spent</div>
+                            <div class="text-base sm:text-lg font-extrabold text-amber-400 mt-1" id="stat-cost">RM 0.00</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- AI Advisor Section -->
+            <!-- AI Advisor Section with Predictive Date Calculation -->
             <div class="ai-glow bg-gradient-to-r from-indigo-950/80 via-purple-950/80 to-slate-900/90 rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden">
                 <div class="flex items-center justify-between mb-3 sm:mb-4 relative z-10">
                     <div class="flex items-center space-x-3">
@@ -163,8 +164,8 @@
                             <i data-lucide="bot" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                         </div>
                         <div>
-                            <h3 class="text-base sm:text-lg font-bold text-white">AutoCare AI Fleet Advisor</h3>
-                            <span class="text-[11px] sm:text-xs text-purple-300">Predictive Diagnostics & Insights</span>
+                            <h3 class="text-base sm:text-lg font-bold text-white">AutoCare AI Predictive Telemetry</h3>
+                            <span class="text-[11px] sm:text-xs text-purple-300">Daily Mileage Rate & Next Service Date Estimation</span>
                         </div>
                     </div>
                     <button onclick="generateAIInsights()" class="px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center">
@@ -172,7 +173,7 @@
                     </button>
                 </div>
                 <div id="ai-advisor-content" class="text-xs sm:text-sm text-purple-200/90 space-y-2 relative z-10 leading-relaxed font-medium">
-                    Analyzing telemetry data...
+                    Calculating telemetry & predictive service dates...
                 </div>
             </div>
 
@@ -207,7 +208,7 @@
                         <span class="text-xs text-gray-400 font-semibold" id="vehicle-type-badge">Profile</span>
                     </div>
 
-                    <div id="checklist-status-container" class="space-y-3 custom-scrollbar flex-1 max-h-[380px] overflow-y-auto pr-1"></div>
+                    <div id="checklist-status-container" class="space-y-3 custom-scrollbar flex-1 max-h-[420px] overflow-y-auto pr-1"></div>
 
                     <button onclick="openLogModal()" class="w-full mt-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center transition shadow-lg shadow-indigo-600/30">
                         <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Add New Log Entry
@@ -217,10 +218,10 @@
                 <div class="glass-card lg:col-span-2 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
                     <div class="flex items-center justify-between">
                         <h2 class="text-sm sm:text-base font-bold text-white flex items-center">
-                            <i data-lucide="history" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 mr-2"></i> History
+                            <i data-lucide="history" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 mr-2"></i> Maintenance History
                         </h2>
                         <button onclick="exportJSON()" class="text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-gray-300 font-medium flex items-center transition">
-                            <i data-lucide="download" class="w-3.5 h-3.5 mr-1"></i> Backup
+                            <i data-lucide="download" class="w-3.5 h-3.5 mr-1"></i> Backup JSON
                         </button>
                     </div>
 
@@ -231,7 +232,7 @@
                                     <th class="p-3 rounded-l-xl">Date</th>
                                     <th class="p-3">Type</th>
                                     <th class="p-3">Mileage</th>
-                                    <th class="p-3">Items / Details</th>
+                                    <th class="p-3">Serviced / Details</th>
                                     <th class="p-3">Cost</th>
                                     <th class="p-3 rounded-r-xl text-right">Action</th>
                                 </tr>
@@ -242,6 +243,20 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- REMINDERS MANAGEMENT MODAL -->
+    <div id="reminders-modal" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4 z-50">
+        <div class="glass-card rounded-3xl border border-indigo-500/40 max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-gray-700/80 pb-4">
+                <h3 class="text-lg font-bold text-white flex items-center">
+                    <i data-lucide="bell" class="w-5 h-5 text-indigo-400 mr-2"></i> Upcoming Service Reminders
+                </h3>
+                <button type="button" onclick="toggleRemindersModal()" class="text-gray-400 hover:text-white p-1 rounded-xl bg-gray-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div id="reminders-list-container" class="space-y-3 custom-scrollbar max-h-96 overflow-y-auto"></div>
+        </div>
     </div>
 
     <!-- ADMIN USER MANAGEMENT MODAL -->
@@ -313,16 +328,13 @@
                 </div>
 
                 <div id="service-fields" class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <label class="block text-xs font-bold text-gray-300">Replaced / Serviced Items Checkbox</label>
-                    </div>
-
-                    <div id="modal-checklist-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto p-3 bg-gray-900/80 rounded-2xl border border-gray-700 custom-scrollbar"></div>
+                    <label class="block text-xs font-bold text-gray-300">Replaced / Serviced Items Checkbox</label>
+                    <div id="modal-checklist-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-52 overflow-y-auto p-3 bg-gray-900/80 rounded-2xl border border-gray-700 custom-scrollbar"></div>
                 </div>
 
                 <div>
                     <label class="block text-xs text-gray-400 mb-1 font-semibold">Workshop / Notes</label>
-                    <input type="text" id="log-notes" placeholder="e.g. Workshop Name, Tire model, Oil grade" class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-2.5 sm:p-3 text-white focus:outline-none focus:border-indigo-500 shadow-inner">
+                    <input type="text" id="log-notes" placeholder="e.g. Workshop Name, Tire brand, Oil grade" class="w-full bg-gray-900 border border-gray-700 rounded-2xl p-2.5 sm:p-3 text-white focus:outline-none focus:border-indigo-500 shadow-inner">
                 </div>
 
                 <div class="flex justify-end space-x-3 pt-3 border-t border-gray-700/80">
@@ -348,30 +360,46 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // FULL PRE-POPULATED CHECKLIST CONFIG WITH MINOR/MAJOR CATEGORIZATION & TYRE AUTO-CALCULATOR
         const DEFAULT_CONFIGS = {
             perodua_alza: {
                 name: "Perodua Alza SE", type: "car", baseInterval: 10000,
                 items: [
-                    { id: "engine_oil", name: "Engine Oil & Filter", interval: 10000 },
-                    { id: "tyre_change", name: "Tyre Replacement", interval: 40000 },
-                    { id: "spark_plugs", name: "Spark Plugs", interval: 40000 },
-                    { id: "atf_fluid", name: "ATF / Gearbox Fluid", interval: 40000 }
+                    { id: "engine_oil", name: "Engine Oil & Filter", category: "Minor Service", interval: 10000 },
+                    { id: "drain_plug", name: "Drain Plug Gasket & Inspection", category: "Minor Service", interval: 10000 },
+                    { id: "tyre_change", name: "Tyre Replacement (Auto-Calc)", category: "Tyre Tracker", interval: 40000 },
+                    { id: "spark_plugs", name: "Spark Plugs Replacement", category: "Major Service", interval: 40000 },
+                    { id: "atf_fluid", name: "ATF / Gearbox Fluid", category: "Major Service", interval: 40000 },
+                    { id: "air_filter", name: "Engine Air Cleaner Filter", category: "Major Service", interval: 20000 },
+                    { id: "cabin_filter", name: "AC Cabin Air Filter", category: "Major Service", interval: 20000 },
+                    { id: "brake_coolant", name: "Brake Fluid & Coolant Flush", category: "Major Service", interval: 40000 },
+                    { id: "brake_pads", name: "Front & Rear Brake Pads", category: "Major Service", interval: 30000 }
                 ]
             },
             mitsubishi_xpander: {
                 name: "Mitsubishi Xpander", type: "car", baseInterval: 10000,
                 items: [
-                    { id: "engine_oil", name: "Engine Oil & Filter", interval: 10000 },
-                    { id: "tyre_change", name: "Tyre Replacement", interval: 40000 },
-                    { id: "cvt_fluid", name: "CVT Fluid", interval: 40000 }
+                    { id: "engine_oil", name: "Engine Oil & Filter", category: "Minor Service", interval: 10000 },
+                    { id: "drain_plug", name: "Drain Plug Gasket & Inspection", category: "Minor Service", interval: 10000 },
+                    { id: "tyre_change", name: "Tyre Replacement (Auto-Calc)", category: "Tyre Tracker", interval: 40000 },
+                    { id: "cvt_fluid", name: "CVT Transmission Fluid", category: "Major Service", interval: 40000 },
+                    { id: "spark_plugs", name: "Iridium Spark Plugs", category: "Major Service", interval: 50000 },
+                    { id: "air_filter", name: "Engine Air Cleaner Filter", category: "Major Service", interval: 20000 },
+                    { id: "cabin_filter", name: "AC Cabin Air Filter", category: "Major Service", interval: 20000 },
+                    { id: "brake_coolant", name: "Brake Fluid & Coolant Flush", category: "Major Service", interval: 40000 }
                 ]
             },
             yamaha_xmax: {
                 name: "Yamaha XMAX 250", type: "motorcycle", baseInterval: 3000,
                 items: [
-                    { id: "engine_oil", name: "Engine Oil (Synthetic)", interval: 3000 },
-                    { id: "front_rear_tyres", name: "Tyre Replacement", interval: 15000 },
-                    { id: "gear_oil", name: "Transmission Gear Oil", interval: 6000 }
+                    { id: "engine_oil", name: "Engine Oil (Fully Synthetic)", category: "Minor Service", interval: 3000 },
+                    { id: "oil_filter", name: "Oil Filter & Strainer Cleaning", category: "Minor Service", interval: 3000 },
+                    { id: "front_rear_tyres", name: "Front & Rear Tyre Replacement", category: "Tyre Tracker", interval: 15000 },
+                    { id: "gear_oil", name: "Transmission Final Gear Oil", category: "Major Service", interval: 6000 },
+                    { id: "spark_plug", name: "Spark Plug Replacement", category: "Major Service", interval: 10000 },
+                    { id: "air_cleaner", name: "V-Belt Cleaner & Engine Filter", category: "Major Service", interval: 12000 },
+                    { id: "cvt_belt", name: "CVT V-Belt & Sliders/Rollers", category: "Major Service", interval: 20000 },
+                    { id: "brake_fluid", name: "Brake Fluid Flush & Pads", category: "Major Service", interval: 10000 }
                 ]
             }
         };
@@ -387,6 +415,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            auth.getRedirectResult().catch(err => console.error("Redirect Sign-In error:", err.message));
             initAuthListener();
         });
 
@@ -397,12 +426,10 @@
                     currentUser = user;
                     document.getElementById('login-screen').classList.add('hidden');
                     
-                    // Check user document in Firestore
                     const userRef = db.collection('users').doc(user.uid);
                     const userDoc = await userRef.get();
 
                     if (!userDoc.exists) {
-                        // Register new user as pending
                         await userRef.set({
                             uid: user.uid,
                             email: user.email,
@@ -434,12 +461,10 @@
 
         function handleGoogleSignIn() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(err => alert("Google Sign-In Error: " + err.message));
+            auth.signInWithRedirect(provider).catch(err => alert("Google Sign-In Error: " + err.message));
         }
 
-        function handleSignOut() {
-            auth.signOut();
-        }
+        function handleSignOut() { auth.signOut(); }
 
         function showPendingScreen() {
             document.getElementById('user-display-name').innerText = currentUser.displayName || currentUser.email;
@@ -465,7 +490,7 @@
             loadUserData();
         }
 
-        // 2. DATA ACCESS (ISOLATED USER VS ADMIN)
+        // 2. DATA ACCESS (WITH AUTO LOCALSTORAGE FALLBACK MIGRATION)
         function loadUserData() {
             const dataDocRef = db.collection('user_data').doc(currentUser.uid);
             dataDocRef.get().then(doc => {
@@ -474,8 +499,17 @@
                     appLogs = data.logs || {};
                     VEHICLE_CONFIGS = data.configs || DEFAULT_CONFIGS;
                 } else {
-                    appLogs = {};
-                    VEHICLE_CONFIGS = DEFAULT_CONFIGS;
+                    const localLogs = JSON.parse(localStorage.getItem('autocare_logs'));
+                    const localConfigs = JSON.parse(localStorage.getItem('autocare_custom_configs'));
+
+                    if (localLogs && Object.keys(localLogs).length > 0) {
+                        appLogs = localLogs;
+                        VEHICLE_CONFIGS = localConfigs || DEFAULT_CONFIGS;
+                        syncToCloud();
+                    } else {
+                        appLogs = {};
+                        VEHICLE_CONFIGS = DEFAULT_CONFIGS;
+                    }
                 }
                 loadVehicleData();
             });
@@ -490,49 +524,43 @@
             }
         }
 
-        // 3. ADMIN USER APPROVAL SYSTEM
-        function toggleAdminModal() {
-            const modal = document.getElementById('admin-modal');
-            modal.classList.toggle('hidden');
-            modal.classList.toggle('flex');
-            if (!modal.classList.contains('hidden')) {
-                fetchUsersForAdmin();
+        // 3. TELEMETRY & PREDICTIVE REMINDER ESTIMATION LOGIC
+        function calculateTelemetry(logs) {
+            if (!logs || logs.length < 2) return { dailyPace: 35, isEstimated: true };
+            
+            const sortedLogs = [...logs].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const firstLog = sortedLogs[0];
+            const lastLog = sortedLogs[sortedLogs.length - 1];
+
+            const diffTime = Math.abs(new Date(lastLog.date) - new Date(firstLog.date));
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffKm = lastLog.mileage - firstLog.mileage;
+
+            if (diffDays > 0 && diffKm > 0) {
+                return { dailyPace: Math.round(diffKm / diffDays), isEstimated: false };
             }
+            return { dailyPace: 35, isEstimated: true }; // default ~35km/day average
         }
 
-        function fetchUsersForAdmin() {
-            db.collection('users').get().then(snapshot => {
-                const tbody = document.getElementById('admin-users-table');
-                tbody.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const u = doc.data();
-                    tbody.insertAdjacentHTML('beforeend', `
-                        <tr class="hover:bg-gray-800/40">
-                            <td class="p-3 font-semibold">${u.displayName || 'User'}</td>
-                            <td class="p-3 text-xs text-gray-400">${u.email}</td>
-                            <td class="p-3"><span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${u.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">${u.status.toUpperCase()}</span></td>
-                            <td class="p-3 text-right">
-                                ${u.status === 'pending' ? `<button onclick="updateUserStatus('${u.uid}', 'approved')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold">Approve</button>` : `<button onclick="updateUserStatus('${u.uid}', 'pending')" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl text-xs">Revoke</button>`}
-                            </td>
-                        </tr>
-                    `);
-                });
-            });
+        function estimateTargetDate(currentOdo, targetOdo, dailyPace) {
+            const remainingKm = targetOdo - currentOdo;
+            if (remainingKm <= 0) return { text: "Overdue", days: 0, dateStr: "Immediate" };
+
+            const daysLeft = Math.round(remainingKm / dailyPace);
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + daysLeft);
+            
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return { text: `~${daysLeft} days left`, days: daysLeft, dateStr: targetDate.toLocaleDateString(undefined, options) };
         }
 
-        function updateUserStatus(uid, status) {
-            db.collection('users').doc(uid).update({ status }).then(() => fetchUsersForAdmin());
-        }
-
-        // VEHICLE LOGIC
+        // VEHICLE LOGIC & DASHBOARD RENDERING
         function switchVehicle(key) {
             currentVehicleKey = key;
             loadVehicleData();
         }
 
-        function getVehicleLogs() {
-            return appLogs[currentVehicleKey] || [];
-        }
+        function getVehicleLogs() { return appLogs[currentVehicleKey] || []; }
 
         function loadVehicleData() {
             const logs = getVehicleLogs().sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -540,8 +568,7 @@
             
             document.getElementById('vehicle-type-badge').innerText = config.name;
 
-            let totalCost = 0, maxOdo = 0, totalFuelLiters = 0, fuelDistance = 0;
-            const fuelLogs = logs.filter(l => l.type === 'fuel').sort((a,b) => a.mileage - b.mileage);
+            let totalCost = 0, maxOdo = 0;
             const serviceLogs = logs.filter(l => l.type === 'service').sort((a,b) => b.mileage - a.mileage);
 
             logs.forEach(l => {
@@ -549,89 +576,38 @@
                 if (parseFloat(l.mileage) > maxOdo) maxOdo = parseFloat(l.mileage);
             });
 
-            if (fuelLogs.length >= 2) {
-                fuelDistance = fuelLogs[fuelLogs.length - 1].mileage - fuelLogs[0].mileage;
-                for (let i = 1; i < fuelLogs.length; i++) totalFuelLiters += parseFloat(fuelLogs[i].liters || 0);
-            }
-
+            const telemetry = calculateTelemetry(logs);
             const lastServiceLog = serviceLogs[0];
             const lastServiceOdo = lastServiceLog ? parseFloat(lastServiceLog.mileage) : 0;
             const isMotorcycle = currentVehicleKey === 'yamaha_xmax' || config.type === 'motorcycle';
             const intervalStep = isMotorcycle ? 3000 : 10000;
             const nextServiceOdo = lastServiceOdo > 0 ? lastServiceOdo + intervalStep : maxOdo + intervalStep;
 
-            const avgKml = (totalFuelLiters > 0) ? (fuelDistance / totalFuelLiters).toFixed(2) : "N/A";
-            const costPerKm = (maxOdo > 0 && totalCost > 0) ? (totalCost / maxOdo).toFixed(2) : "0.00";
+            // Tyre Auto-Calculator
+            const tyreItem = config.items.find(i => i.category === 'Tyre Tracker');
+            const tyreLog = logs.filter(l => l.type === 'service' && l.checklist && l.checklist.includes(tyreItem ? tyreItem.id : '')).sort((a,b) => b.mileage - a.mileage)[0];
+            const lastTyreOdo = tyreLog ? parseFloat(tyreLog.mileage) : 0;
+            const nextTyreOdo = lastTyreOdo + (tyreItem ? tyreItem.interval : 40000);
+            const tyreRemaining = nextTyreOdo - maxOdo;
+            let tyreStatusText = "OK";
+            if (maxOdo > 0) {
+                if (tyreRemaining <= 0) tyreStatusText = "Replace";
+                else if (tyreRemaining <= 2000) tyreStatusText = "Due Soon";
+            }
 
             document.getElementById('stat-odo').innerText = `${maxOdo.toLocaleString()} km`;
             document.getElementById('stat-next-service').innerText = `${nextServiceOdo.toLocaleString()} km`;
+            document.getElementById('stat-tyre-status').innerText = tyreStatusText;
+            document.getElementById('stat-daily-pace').innerText = `~${telemetry.dailyPace} km/d`;
             document.getElementById('stat-cost').innerText = `RM ${totalCost.toFixed(2)}`;
-            document.getElementById('stat-eff').innerText = `${avgKml} ${avgKml !== 'N/A' ? 'km/L' : ''}`;
-            document.getElementById('stat-cost-km').innerText = `RM ${costPerKm}`;
 
-            renderChecklistStatus(maxOdo);
+            renderChecklistStatus(maxOdo, telemetry.dailyPace);
             renderLogsTable(logs);
             updateChartsData(logs);
             generateAIInsights();
         }
 
-        function generateAIInsights() {
-            const logs = getVehicleLogs();
-            const config = VEHICLE_CONFIGS[currentVehicleKey] || DEFAULT_CONFIGS[currentVehicleKey];
-            const advisorEl = document.getElementById('ai-advisor-content');
-            if (!advisorEl) return;
-
-            let maxOdo = 0;
-            logs.forEach(l => { if (parseFloat(l.mileage) > maxOdo) maxOdo = parseFloat(l.mileage); });
-
-            let alerts = [];
-            config.items.forEach(item => {
-                const lastLog = logs.filter(l => l.type === 'service' && l.checklist && l.checklist.includes(item.id)).sort((a, b) => b.mileage - a.mileage)[0];
-                const lastOdo = lastLog ? parseFloat(lastLog.mileage) : 0;
-                const nextOdo = lastOdo + item.interval;
-                const remaining = nextOdo - maxOdo;
-                if (maxOdo > 0 && remaining <= 1000) {
-                    alerts.push(`⚠️ <strong>${item.name}</strong> is ${remaining <= 0 ? 'overdue by ' + Math.abs(remaining) + ' km' : 'due in ' + remaining + ' km'}.`);
-                }
-            });
-
-            const totalSpent = logs.reduce((acc, l) => acc + parseFloat(l.cost || 0), 0);
-            let aiText = `<p>Fleet telemetry active. Odometer: <strong>${maxOdo.toLocaleString()} km</strong>. Total expenditure: <strong>RM ${totalSpent.toFixed(2)}</strong>.</p>`;
-            if (alerts.length > 0) aiText += `<p class="mt-2 text-amber-300"><strong>Priority Actions:</strong> ${alerts.join(' | ')}</p>`;
-            else aiText += `<p class="mt-2 text-emerald-300">✨ All components optimal based on recent service entries.</p>`;
-
-            advisorEl.innerHTML = aiText;
-            lucide.createIcons();
-        }
-
-        function initCharts() {
-            const costCtx = document.getElementById('costChart').getContext('2d');
-            if (costChartInstance) costChartInstance.destroy();
-            costChartInstance = new Chart(costCtx, {
-                type: 'doughnut',
-                data: { labels: ['Maintenance', 'Fuel'], datasets: [{ data: [0, 0], backgroundColor: ['#6366f1', '#10b981'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
-            });
-
-            const trendCtx = document.getElementById('trendChart').getContext('2d');
-            if (trendChartInstance) trendChartInstance.destroy();
-            trendChartInstance = new Chart(trendCtx, {
-                type: 'line',
-                data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], datasets: [{ label: 'Monthly Expense (RM)', data: [0, 0, 0, 0, 0, 0], borderColor: '#6366f1', fill: true, tension: 0.4 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
-            });
-        }
-
-        function updateChartsData(logs) {
-            let serviceTotal = 0, fuelTotal = 0;
-            logs.forEach(l => {
-                if (l.type === 'service') serviceTotal += parseFloat(l.cost || 0);
-                if (l.type === 'fuel') fuelTotal += parseFloat(l.cost || 0);
-            });
-            if (costChartInstance) { costChartInstance.data.datasets[0].data = [serviceTotal, fuelTotal]; costChartInstance.update(); }
-        }
-
-        function renderChecklistStatus(currentOdo) {
+        function renderChecklistStatus(currentOdo, dailyPace) {
             const container = document.getElementById('checklist-status-container');
             if (!container) return;
             container.innerHTML = '';
@@ -643,6 +619,7 @@
                 const lastOdo = lastLog ? parseFloat(lastLog.mileage) : 0;
                 const nextOdo = lastOdo + item.interval;
                 const remainingKm = nextOdo - currentOdo;
+                const est = estimateTargetDate(currentOdo, nextOdo, dailyPace);
 
                 let color = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400', badge = 'OK';
                 if (currentOdo > 0) {
@@ -653,13 +630,93 @@
                 container.insertAdjacentHTML('beforeend', `
                     <div class="p-3.5 rounded-2xl border ${color} space-y-1.5 backdrop-blur-sm">
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-sm text-gray-200">${item.name}</span>
-                            <span class="text-[10px] font-black px-2.5 py-0.5 rounded-full border border-current tracking-wider">${badge}</span>
+                            <span class="font-bold text-xs text-gray-200">${item.name}</span>
+                            <span class="text-[9px] font-black px-2 py-0.5 rounded-full border border-current tracking-wider">${badge}</span>
                         </div>
-                        <div class="flex justify-between text-xs text-gray-400 font-medium">
-                            <span>Last: ${lastOdo > 0 ? lastOdo.toLocaleString() + ' km' : 'Never'}</span>
-                            <span>Next: <strong class="text-white">${nextOdo.toLocaleString()} km</strong></span>
+                        <div class="text-[11px] text-gray-400 flex justify-between">
+                            <span>Category: <strong class="text-indigo-300">${item.category}</strong></span>
+                            <span>Target: <strong class="text-white">${nextOdo.toLocaleString()} km</strong></span>
                         </div>
+                        <div class="text-[11px] text-amber-300/90 font-medium">
+                            📅 Est Date: ${est.dateStr} (${est.text})
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function generateAIInsights() {
+            const logs = getVehicleLogs();
+            const config = VEHICLE_CONFIGS[currentVehicleKey] || DEFAULT_CONFIGS[currentVehicleKey];
+            const advisorEl = document.getElementById('ai-advisor-content');
+            if (!advisorEl) return;
+
+            let maxOdo = 0;
+            logs.forEach(l => { if (parseFloat(l.mileage) > maxOdo) maxOdo = parseFloat(l.mileage); });
+
+            const telemetry = calculateTelemetry(logs);
+            let alerts = [], remindersCount = 0;
+
+            config.items.forEach(item => {
+                const lastLog = logs.filter(l => l.type === 'service' && l.checklist && l.checklist.includes(item.id)).sort((a, b) => b.mileage - a.mileage)[0];
+                const lastOdo = lastLog ? parseFloat(lastLog.mileage) : 0;
+                const nextOdo = lastOdo + item.interval;
+                const remaining = nextOdo - maxOdo;
+                const est = estimateTargetDate(maxOdo, nextOdo, telemetry.dailyPace);
+
+                if (maxOdo > 0 && remaining <= 1000) {
+                    alerts.push(`⚠️ <strong>${item.name}</strong> est. date: <strong>${est.dateStr}</strong> (${remaining <= 0 ? 'Overdue' : 'due in ' + remaining + ' km'}).`);
+                    remindersCount++;
+                }
+            });
+
+            const bellBadge = document.getElementById('bell-badge');
+            if (bellBadge) {
+                if (remindersCount > 0) { bellBadge.innerText = remindersCount; bellBadge.classList.remove('hidden'); }
+                else { bellBadge.classList.add('hidden'); }
+            }
+
+            const totalSpent = logs.reduce((acc, l) => acc + parseFloat(l.cost || 0), 0);
+            let aiText = `<p>Telemetry pace: <strong>~${telemetry.dailyPace} km/day</strong>. Odometer: <strong>${maxOdo.toLocaleString()} km</strong>. Total spent: <strong>RM ${totalSpent.toFixed(2)}</strong>.</p>`;
+            if (alerts.length > 0) aiText += `<p class="mt-2 text-amber-300"><strong>Priority Alerts:</strong> ${alerts.join('<br>')}</p>`;
+            else aiText += `<p class="mt-2 text-emerald-300">✨ Component health optimal. Next predicted service is well within safe thresholds.</p>`;
+
+            advisorEl.innerHTML = aiText;
+            lucide.createIcons();
+        }
+
+        function toggleRemindersModal() {
+            const modal = document.getElementById('reminders-modal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+            if (!modal.classList.contains('hidden')) renderRemindersList();
+        }
+
+        function renderRemindersList() {
+            const container = document.getElementById('reminders-list-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const logs = getVehicleLogs();
+            let maxOdo = 0;
+            logs.forEach(l => { if (parseFloat(l.mileage) > maxOdo) maxOdo = parseFloat(l.mileage); });
+            const telemetry = calculateTelemetry(logs);
+            const config = VEHICLE_CONFIGS[currentVehicleKey] || DEFAULT_CONFIGS[currentVehicleKey];
+
+            config.items.forEach(item => {
+                const lastLog = logs.filter(l => l.type === 'service' && l.checklist && l.checklist.includes(item.id)).sort((a, b) => b.mileage - a.mileage)[0];
+                const lastOdo = lastLog ? parseFloat(lastLog.mileage) : 0;
+                const nextOdo = lastOdo + item.interval;
+                const est = estimateTargetDate(maxOdo, nextOdo, telemetry.dailyPace);
+
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="p-4 rounded-2xl bg-gray-900 border border-gray-800 space-y-1">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-sm text-white">${item.name}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">${item.category}</span>
+                        </div>
+                        <div class="text-xs text-gray-400">Next Target: <strong class="text-gray-200">${nextOdo.toLocaleString()} km</strong></div>
+                        <div class="text-xs text-amber-400 font-semibold">Predicted Completion Date: ${est.dateStr} (${est.text})</div>
                     </div>
                 `);
             });
@@ -733,15 +790,39 @@
             const container = document.getElementById('modal-checklist-container');
             if (!container) return;
             container.innerHTML = '';
-            config.items.forEach(item => {
+
+            const minorItems = config.items.filter(i => i.category === 'Minor Service');
+            const majorItems = config.items.filter(i => i.category === 'Major Service');
+            const tyreItems = config.items.filter(i => i.category === 'Tyre Tracker');
+
+            let html = `<div class="col-span-full font-bold text-xs text-indigo-400 border-b border-gray-700 pb-1">Minor Service Items</div>`;
+            minorItems.forEach(item => {
                 const isChecked = selectedIds.includes(item.id) ? 'checked' : '';
-                container.insertAdjacentHTML('beforeend', `
-                    <label class="flex items-center space-x-2.5 text-xs text-gray-300 bg-gray-800/80 p-2.5 rounded-xl cursor-pointer hover:bg-gray-700">
-                        <input type="checkbox" value="${item.id}" ${isChecked} class="log-checklist-item rounded bg-gray-900 border-gray-700 text-indigo-600">
-                        <span class="font-medium">${item.name}</span>
-                    </label>
-                `);
+                html += `<label class="flex items-center space-x-2 text-xs text-gray-300 bg-gray-800/80 p-2 rounded-xl cursor-pointer hover:bg-gray-700">
+                    <input type="checkbox" value="${item.id}" ${isChecked} class="log-checklist-item rounded bg-gray-900 border-gray-700 text-indigo-600">
+                    <span>${item.name}</span>
+                </label>`;
             });
+
+            html += `<div class="col-span-full font-bold text-xs text-amber-400 border-b border-gray-700 pb-1 mt-2">Major Service Items</div>`;
+            majorItems.forEach(item => {
+                const isChecked = selectedIds.includes(item.id) ? 'checked' : '';
+                html += `<label class="flex items-center space-x-2 text-xs text-gray-300 bg-gray-800/80 p-2 rounded-xl cursor-pointer hover:bg-gray-700">
+                    <input type="checkbox" value="${item.id}" ${isChecked} class="log-checklist-item rounded bg-gray-900 border-gray-700 text-indigo-600">
+                    <span>${item.name}</span>
+                </label>`;
+            });
+
+            html += `<div class="col-span-full font-bold text-xs text-emerald-400 border-b border-gray-700 pb-1 mt-2">Tyre Replacement</div>`;
+            tyreItems.forEach(item => {
+                const isChecked = selectedIds.includes(item.id) ? 'checked' : '';
+                html += `<label class="flex items-center space-x-2 text-xs text-gray-300 bg-gray-800/80 p-2 rounded-xl cursor-pointer hover:bg-gray-700">
+                    <input type="checkbox" value="${item.id}" ${isChecked} class="log-checklist-item rounded bg-gray-900 border-gray-700 text-indigo-600">
+                    <span>${item.name}</span>
+                </label>`;
+            });
+
+            container.innerHTML = html;
         }
 
         function closeLogModal() {
@@ -789,6 +870,64 @@
                 syncToCloud();
                 loadVehicleData();
             }
+        }
+
+        function initCharts() {
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            if (costChartInstance) costChartInstance.destroy();
+            costChartInstance = new Chart(costCtx, {
+                type: 'doughnut',
+                data: { labels: ['Maintenance', 'Fuel'], datasets: [{ data: [0, 0], backgroundColor: ['#6366f1', '#10b981'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
+            });
+
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            if (trendChartInstance) trendChartInstance.destroy();
+            trendChartInstance = new Chart(trendCtx, {
+                type: 'line',
+                data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], datasets: [{ label: 'Monthly Expense (RM)', data: [0, 0, 0, 0, 0, 0], borderColor: '#6366f1', fill: true, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function updateChartsData(logs) {
+            let serviceTotal = 0, fuelTotal = 0;
+            logs.forEach(l => {
+                if (l.type === 'service') serviceTotal += parseFloat(l.cost || 0);
+                if (l.type === 'fuel') fuelTotal += parseFloat(l.cost || 0);
+            });
+            if (costChartInstance) { costChartInstance.data.datasets[0].data = [serviceTotal, fuelTotal]; costChartInstance.update(); }
+        }
+
+        function toggleAdminModal() {
+            const modal = document.getElementById('admin-modal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+            if (!modal.classList.contains('hidden')) fetchUsersForAdmin();
+        }
+
+        function fetchUsersForAdmin() {
+            db.collection('users').get().then(snapshot => {
+                const tbody = document.getElementById('admin-users-table');
+                tbody.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const u = doc.data();
+                    tbody.insertAdjacentHTML('beforeend', `
+                        <tr class="hover:bg-gray-800/40">
+                            <td class="p-3 font-semibold">${u.displayName || 'User'}</td>
+                            <td class="p-3 text-xs text-gray-400">${u.email}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${u.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">${u.status ? u.status.toUpperCase() : 'PENDING'}</span></td>
+                            <td class="p-3 text-right">
+                                ${u.status === 'pending' ? `<button onclick="updateUserStatus('${u.uid}', 'approved')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold">Approve</button>` : `<button onclick="updateUserStatus('${u.uid}', 'pending')" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl text-xs">Revoke</button>`}
+                            </td>
+                        </tr>
+                    `);
+                });
+            });
+        }
+
+        function updateUserStatus(uid, status) {
+            db.collection('users').doc(uid).update({ status }).then(() => fetchUsersForAdmin());
         }
 
         function exportJSON() {
